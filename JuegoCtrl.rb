@@ -1,0 +1,145 @@
+#!/usr/bin ruby1.9.1
+require 'Mazo'
+require 'Jugador'
+require 'Croupier'
+
+class JuegoCtrl
+	
+	@mazo
+	@jugadores
+	@ganadores_potenciales = false
+	@perdio_croupier = false
+	
+	def initialize(mazo, jugadores)
+		@mazo = mazo
+		@jugadores = jugadores
+	end
+	
+	def iniciarJuego
+		repartirCartas
+		print
+		deseaPlantarse("init", nil)
+		validarGanador
+	end
+	
+	private
+	def deseaPlantarse(mode, jugador)
+		if(mode.eql?("init"))
+			@jugadores.each do |jugador|
+				if(jugador.instance_of?(Croupier))
+					if(@ganadores_potenciales)
+						validarManoCroupier(jugador)
+					end
+				else
+					msgPlantarse(jugador)
+					pregunta(jugador)
+				end
+			end
+		else
+			if(jugador.instance_of?(Croupier))
+				print
+				validarManoCroupier(jugador)
+			else
+				msgPlantarse(jugador)
+				pregunta(jugador)
+			end
+		end
+	end
+	
+	private
+	def validarManoCroupier(jugador)
+		if(jugador.valorarMano < 17)
+			repartirOtraCarta(jugador)
+		else
+			jugador.estado = Jugador.Plantado
+		end
+	end
+	
+	private
+	def pregunta(jugador)
+		yes_no = gets
+#		if(yes_no.eql?('y'))
+		if (yes_no =~ /y/)
+			jugador.estado = Jugador.Plantado
+			ganadores_potenciales = true
+#		elsif(yes_no.eql?('n'))
+		elsif(yes_no =~ /n/)
+			puts "entro"
+			repartirOtraCarta(jugador)
+		end
+	end
+	
+	private
+	def repartirOtraCarta(jugador)
+		jugador.addCarta(@mazo.repartirCarta)
+		if(validarPuntaje?(jugador))
+			#nada
+		else
+			print
+			deseaPlantarse(nil,jugador)
+		end
+		
+	end
+	
+	private
+	def validarPuntaje?(jugador)
+		if(jugador.valorarMano > 21)
+			jugador.estado = Jugador.Descalificado
+			puts jugador.nombre + " perdio"
+			if(jugador.instance_of?(Croupier))
+				@perdio_croupier = true
+			end
+			true
+		elsif
+			false
+		end
+	end
+	
+	private
+	def msgPlantarse(jugador)
+		puts jugador.nombre + " ¿desea plantarse?(y/n)"
+	end
+	
+	private
+	def repartirCartas
+		@jugadores.each do |jugador|
+			jugador.addCarta(@mazo.repartirCarta)
+			jugador.addCarta(@mazo.repartirCarta)
+		end
+	end
+	
+	private
+	def validarGanador
+		if(@perdio_croupier)
+			@jugadores.each do |jugador|
+				if(!jugador.isOut?)
+					jugador.ganados += 1
+					puts "#{jugador.nombre}  ah ganado"
+				end
+			end
+		else
+			@jugadores.each do |jugador|
+				if(jugador.estado == Jugador.descalificado)
+				elsif((jugador != @croupier) && (jugador.valorarMano > @jugadores.last.valorarMano))
+					jugador.ganados += 1
+					puts "#{jugador.nombre} le ah ganado al croupier"
+				elsif(jugador == @jugadores.last)
+					#nada
+				else
+					@jugadores.last.ganados += 1
+					puts "el croupier le ah ganado a @{jugador.nombre}"
+				end
+			end
+		end
+	end
+	
+	private
+	def print
+		@jugadores.each do |jugador|
+			puts "-------------------------------------"
+			puts jugador.nombre
+			puts jugador.getCartas
+		end
+	end
+	
+end
